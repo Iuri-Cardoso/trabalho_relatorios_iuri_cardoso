@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Breve análise sobre a produção de orgânicos no Brasil</title>
+<title>Breve análise sobre produtores de orgânicos no Brasil</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -110,7 +110,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Breve análise sobre a produção de orgânicos no Brasil</h1>
+<h1 class="title">Breve análise sobre produtores de orgânicos no Brasil</h1>
 </div>
 
 
@@ -124,15 +124,22 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 </header>
 
-<p>Os <a href="https://dados.agricultura.gov.br/dataset/cadastro-nacional-de-produtores-organicos">dados utilizados</a> estão disponíveis na base de Dados Abertos oficiais do Ministério da Agricultura, Pecuária e Abastecimento (MAPA). A última atualização dos dados foi realizada em 23 de Maio de 2022, mas são referente ao ano de 2019.</p>
-<p>Neste trabalho, eu gostaria de verificar <strong>quais paises possuem mais entidades certificadas para exportar protudos orgânicos para o Brasil</strong>. Para, em seguida, analisar <strong>a quantidade por unidade federativa</strong>.</p>
-<p>O primeiro passo: Importar os dados e organizar as variáveis.</p>
+<section id="introdução" class="level2">
+<h2 class="anchored" data-anchor-id="introdução">Introdução</h2>
+<p>Neste trabalho, verificaremos <strong>quais países possuem mais entidades certificadas para exportar protudos orgânicos para o Brasil</strong>. Para, em seguida, analisar <strong>de produtores orgânicos por unidade federativa</strong>.</p>
+<p>Os <a href="https://dados.agricultura.gov.br/dataset/cadastro-nacional-de-produtores-organicos">dados utilizados</a> estão disponíveis na base de Dados Abertos oficiais do Ministério da Agricultura, Pecuária e Abastecimento (MAPA). A última atualização dos dados foi realizada em 23 de Maio de 2022, mas os mesmos são referentes ao ano de 2019.</p>
+</section>
+<section id="importando-os-dados" class="level2">
+<h2 class="anchored" data-anchor-id="importando-os-dados">Importando os dados</h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>produtores <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(<span class="st">"~/projetos_r/dados/cnpomapa30092019.xlsx"</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>produtores <span class="ot">&lt;-</span> janitor<span class="sc">::</span><span class="fu">clean_names</span>(produtores)</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>A base possui <strong>19978</strong> entidades produtoras de orgânicos, tanto nacionais quanto internacionais. Além disso, tem-se as seguintes colunas: <strong>tipo_de_entidade, entidade, pais, uf, cidade, situacao_cnpo, cnpf_cnpj_nif, nome_do_produtor, escopo, atividades, contato</strong>.</p>
+</section>
+<section id="tratando-os-dados" class="level2">
+<h2 class="anchored" data-anchor-id="tratando-os-dados">Tratando os dados</h2>
 <p>Com os dados importados, realizamos <strong>transformações</strong> para iniciar a análise. Na coluna sobre o país de origem, os nomes não estavam padronizados e, também, o Brasil estava representado como “Brasil” e como “BR”.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>prod2 <span class="ot">&lt;-</span> produtores <span class="sc">%&gt;%</span> </span>
@@ -147,64 +154,90 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>                          pais <span class="sc">==</span> <span class="st">"PARAGUAY"</span> <span class="sc">~</span> <span class="st">"PARAGUAI"</span>,</span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>                          <span class="cn">TRUE</span> <span class="sc">~</span> pais))</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>O segundo passo foi agrupar todos os países, à exceção dos Brasil, e somar a quantidade de entidades cadastradas.</p>
+<p>Olhemos agora para os estados brasileiros. Assim como nos países, encontramos algumas insconscistências na apresentação das observações. Há estados cadastrados pelo nome e pela sigla, siglas com alguma das letras em caixa baixa e a Cidade del Est está cadastrada como estado, sendo uma cidade na divisa do Brasil com o Paraguai. Neste caso, por ela estar cadastrada como brasileira, reclassificaremos como uma entidade pertencente ao estado do Paraná (PR).</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>prod2 <span class="sc">%&gt;%</span> </span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span> (pais <span class="sc">!=</span> <span class="st">"BRASIL"</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(pais) <span class="sc">%&gt;%</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span> () <span class="sc">%&gt;%</span> </span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n)) <span class="sc">%&gt;%</span> </span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span> (<span class="at">quant_entidades =</span> n ) <span class="ot">-&gt;</span> exportadores</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span> (pais <span class="sc">==</span> <span class="st">"BRASIL"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">uf =</span> <span class="fu">case_when</span>(uf <span class="sc">==</span> <span class="st">"Bahia"</span><span class="sc">~</span> <span class="st">"BA"</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>                          uf <span class="sc">==</span> <span class="st">"Ciudad del Este"</span> <span class="sc">~</span> <span class="st">"PR"</span>, </span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>                          uf <span class="sc">==</span> <span class="st">"ITAPUA"</span> <span class="sc">~</span> <span class="st">"BA"</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                          uf <span class="sc">==</span> <span class="st">"Pr"</span><span class="sc">~</span> <span class="st">"PR"</span>, </span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>                          uf <span class="sc">==</span> <span class="st">"sc"</span> <span class="sc">~</span> <span class="st">"SC"</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>                          <span class="cn">TRUE</span> <span class="sc">~</span> uf)) <span class="sc">%&gt;%</span> </span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(uf) <span class="sc">%&gt;%</span> </span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span> () <span class="sc">%&gt;%</span> </span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n))<span class="ot">-&gt;</span> prod_uf</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Assim, obtemos a seguinte tabela:</p>
+</section>
+<section id="exportadores" class="level2">
+<h2 class="anchored" data-anchor-id="exportadores">Exportadores</h2>
+<p>O segundo passo foi agrupar todos os países, à exceção dos Brasil, e somar a quantidade de entidades cadastradas.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>exportadores<span class="sc">%&gt;%</span> </span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  reactable<span class="sc">::</span><span class="fu">reactable</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>prod2 <span class="sc">%&gt;%</span> </span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span> (pais <span class="sc">!=</span> <span class="st">"BRASIL"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(pais) <span class="sc">%&gt;%</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span> () <span class="sc">%&gt;%</span> </span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n)) <span class="sc">%&gt;%</span> </span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span> (<span class="at">produtores =</span> n ) <span class="ot">-&gt;</span> exportadores</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Ao total temos <strong>19978</strong> estrangeiros e <strong>27</strong> brasileiros. Para os estrangeiros, obtemos a seguinte tabela:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>exportadores<span class="sc">%&gt;%</span> </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  reactable<span class="sc">::</span><span class="fu">reactable</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 
-<div id="htmlwidget-fc274f6ea4ea98fb0e66" class="reactable html-widget" style="width:auto;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-fc274f6ea4ea98fb0e66">{"x":{"tag":{"name":"Reactable","attribs":{"data":{"pais":["BOLÍVIA","TURQUIA","ITÁLIA","CHILE","PARAGUAI","ARGENTINA","ESPANHA","PORTUGAL","SRI LANKA","MÉXICO","CHINA","PAQUISTÃO","TUNISIA","PERU","PHILIPPINES","ROMÊNIA","AUSTRIA","EUA","FILIPINAS","SUDAN"],"quant_entidades":[382,103,74,38,37,34,17,16,13,9,7,4,4,3,3,2,1,1,1,1]},"columns":[{"accessor":"pais","name":"pais","type":"character"},{"accessor":"quant_entidades","name":"quant_entidades","type":"numeric"}],"defaultPageSize":10,"paginationType":"numbers","showPageInfo":true,"minRows":1,"dataKey":"152a53dd7718cd5e1acf4b50ff7b9e34"},"children":[]},"class":"reactR_markup"},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-cfae6f1f44c660990321" class="reactable html-widget" style="width:auto;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-cfae6f1f44c660990321">{"x":{"tag":{"name":"Reactable","attribs":{"data":{"pais":["BOLÍVIA","TURQUIA","ITÁLIA","CHILE","PARAGUAI","ARGENTINA","ESPANHA","PORTUGAL","SRI LANKA","MÉXICO","CHINA","PAQUISTÃO","TUNISIA","PERU","PHILIPPINES","ROMÊNIA","AUSTRIA","EUA","FILIPINAS","SUDAN"],"produtores":[382,103,74,38,37,34,17,16,13,9,7,4,4,3,3,2,1,1,1,1]},"columns":[{"accessor":"pais","name":"pais","type":"character"},{"accessor":"produtores","name":"produtores","type":"numeric"}],"defaultPageSize":10,"paginationType":"numbers","showPageInfo":true,"minRows":1,"dataKey":"2ab822f2f8402944d69c96f6b1fca03c"},"children":[]},"class":"reactR_markup"},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
-<p>Nota-se que os três países que mais possuem entidades orgânicas cadastradas para exportar para o Brasil são: <strong>Bolívia, Turquia e Itália</strong>.</p>
-<p>Importante ressaltar que ter o maior número de entidades certificadas para exportação não necessariamente significa que exporta em maior quantidade para o Brasil.</p>
-<p>Olhemos agora para os estados brasileiros. Assim como nos países, encontramos algumas insconscistências na apresentação das observações. Há estados cadastrado em alguns momentos pelo nome e em outros pela sigla, siglas com alguma das letras em caixa baixa e a Cidade del Est está cadastrada como estado, sendo uma cidade na divisa do Brasil com o Paraguai. Porém, por estar cadastrada como brasileira, reclassificaremos como uma entidade pertencente ao estado do Paraná (PR).</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>prod2 <span class="sc">%&gt;%</span> </span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span> (pais <span class="sc">==</span> <span class="st">"BRASIL"</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">uf =</span> <span class="fu">case_when</span>(uf <span class="sc">==</span> <span class="st">"Bahia"</span><span class="sc">~</span> <span class="st">"BA"</span>,</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                          uf <span class="sc">==</span> <span class="st">"Ciudad del Este"</span> <span class="sc">~</span> <span class="st">"PR"</span>, </span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                          uf <span class="sc">==</span> <span class="st">"ITAPUA"</span> <span class="sc">~</span> <span class="st">"BA"</span>,</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>                          uf <span class="sc">==</span> <span class="st">"Pr"</span><span class="sc">~</span> <span class="st">"PR"</span>, </span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>                          uf <span class="sc">==</span> <span class="st">"sc"</span> <span class="sc">~</span> <span class="st">"SC"</span>,</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>                          <span class="cn">TRUE</span> <span class="sc">~</span> uf)) <span class="sc">%&gt;%</span> </span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(uf) <span class="sc">%&gt;%</span> </span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span> () <span class="sc">%&gt;%</span> </span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n))<span class="ot">-&gt;</span> prod_uf</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Nota-se que os três países que mais possuem produtores orgânicos autorizados a exportar para exportar para o Brasil são: <strong>Bolívia, Turquia e Itália</strong>.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/bolivia_flag.png" style="width:3cm;height:2cm" class="figure-img"></p>
+<p></p><figcaption class="figure-caption">Bandeira da Bolívia</figcaption><p></p>
+</figure>
 </div>
-<p>Feito o tratamento necessário aos dados, temos a seguinte tabela. Os estados com mais entidades cadastradas são <strong>Paraná, Rio Grande do Sul e São Paulo</strong>:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/turquia_flag-01.png" class="img-fluid figure-img" style="width:3cm"></p>
+<p></p><figcaption class="figure-caption">Bandeira da Turquia</figcaption><p></p>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/italia_flag.png" class="img-fluid figure-img" style="width:3cm"></p>
+<p></p><figcaption class="figure-caption">Bandeira da Itália</figcaption><p></p>
+</figure>
+</div>
+<p>Importante ressaltar que ter o maior número de entidades certificadas para exportação não necessariamente significa que o país exporta em maior quantidade para o Brasil.</p>
+</section>
+<section id="quantidade-de-produtores-por-estado" class="level2">
+<h2 class="anchored" data-anchor-id="quantidade-de-produtores-por-estado">Quantidade de produtores por estado</h2>
+<p>Os estados com mais produtores são <strong>Paraná, Rio Grande do Sul e São Paulo</strong>:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>prod_uf<span class="sc">%&gt;%</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span> (<span class="at">quant_entidades =</span> n) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span> (<span class="at">produtores =</span> n) <span class="sc">%&gt;%</span> </span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span> (<span class="at">estado =</span> uf) <span class="sc">%&gt;%</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  reactable<span class="sc">::</span><span class="fu">reactable</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 
-<div id="htmlwidget-3a086e5044c42d215d65" class="reactable html-widget" style="width:auto;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-3a086e5044c42d215d65">{"x":{"tag":{"name":"Reactable","attribs":{"data":{"estado":["PR","RS","SP","SC","PA","MG","RJ","PE","PI","MA","BA","CE","RN","PB","AM","ES","DF","SE","AC","MT","GO","RO","AL","MS","AP",null,"RR"],"quant_entidades":[3372,2388,2237,1618,926,925,839,757,744,681,650,616,526,471,365,327,295,275,246,243,223,162,109,97,52,47,37]},"columns":[{"accessor":"estado","name":"estado","type":"character"},{"accessor":"quant_entidades","name":"quant_entidades","type":"numeric"}],"defaultPageSize":10,"paginationType":"numbers","showPageInfo":true,"minRows":1,"dataKey":"10233145ccd9e14eba419782d82787ef"},"children":[]},"class":"reactR_markup"},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-6ec73b8cbd5bfbf8a2d8" class="reactable html-widget" style="width:auto;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-6ec73b8cbd5bfbf8a2d8">{"x":{"tag":{"name":"Reactable","attribs":{"data":{"estado":["PR","RS","SP","SC","PA","MG","RJ","PE","PI","MA","BA","CE","RN","PB","AM","ES","DF","SE","AC","MT","GO","RO","AL","MS","AP",null,"RR"],"produtores":[3372,2388,2237,1618,926,925,839,757,744,681,650,616,526,471,365,327,295,275,246,243,223,162,109,97,52,47,37]},"columns":[{"accessor":"estado","name":"estado","type":"character"},{"accessor":"produtores","name":"produtores","type":"numeric"}],"defaultPageSize":10,"paginationType":"numbers","showPageInfo":true,"minRows":1,"dataKey":"a9d2da369af867d74280bd772f44b104"},"children":[]},"class":"reactR_markup"},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
+<p>No seguinte mapa, apresentamos os estados com o maior número de produtores de orgânicos cadastrados no site do MAPA. Lembrando que o maior número de produtores não necessariamente representa maior produção em quantidade</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data=</span>dados_brasil,  <span class="fu">aes</span>(<span class="at">fill=</span>n),<span class="at">color =</span> <span class="cn">NA</span>)<span class="sc">+</span></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient</span>(<span class="at">low =</span> <span class="st">"grey"</span>, <span class="at">high =</span> <span class="st">"red"</span>,</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                      <span class="at">name=</span><span class="st">"Quant. entidades"</span>) <span class="sc">+</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span><span class="st">"Receita anual 2022"</span>, <span class="at">size=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span><span class="st">"Entidades produtoras de orgânicos certificadas no Brasil"</span>, <span class="at">size=</span><span class="dv">10</span>) <span class="sc">+</span></span>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <p><img src="trabalho_relatorios_iuri_cardoso.index_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+</section>
 
 </main>
 <!-- /main column -->

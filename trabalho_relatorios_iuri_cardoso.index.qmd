@@ -1,5 +1,5 @@
 ---
-title: "Breve análise sobre a produção de orgânicos no Brasil"
+title: "Breve análise sobre produtores de orgânicos no Brasil"
 format: html
 editor: visual
 theme: "yeti"
@@ -7,13 +7,20 @@ lang: pt
 ---
 
 ```{r, include=FALSE}
-#| echo: false
 library(tidyverse)
 library(readxl)
 library(stringr)
+library (reactable)
+library(geobr)
 ```
 
-Os [dados utilizados](https://dados.agricultura.gov.br/dataset/cadastro-nacional-de-produtores-organicos) estão disponíveis na base de Dados Abertos oficiais do Ministério da Agricultura, Pecuária e Abastecimento (MAPA). Neste trabalho, eu gostaria de verificar **quais paises possuem mais entidades certificadas para exportar protudos orgânicos para o Brasil**. Para, em seguida, analisar **a produção por unidade federativa**.
+## Introdução
+
+Neste trabalho, verificaremos **quais países possuem mais entidades certificadas para exportar protudos orgânicos para o Brasil**. Para, em seguida, analisar **de produtores orgânicos por unidade federativa**.
+
+Os [dados utilizados](https://dados.agricultura.gov.br/dataset/cadastro-nacional-de-produtores-organicos) estão disponíveis na base de Dados Abertos oficiais do Ministério da Agricultura, Pecuária e Abastecimento (MAPA). A última atualização dos dados foi realizada em 23 de Maio de 2022, mas os mesmos são referentes ao ano de 2019.
+
+## Importando os dados
 
 ```{r}
 
@@ -23,9 +30,11 @@ produtores <- janitor::clean_names(produtores)
 
 ```
 
-A base apresenta **`r nrow(produtores)`** entidades produtoras de orgânicos, tanto nacionais quanto internacionais. Com os dados importados, podemos precisamos **transformá-los** para dar início à análise.
+A base possui **`r nrow(produtores)`** entidades produtoras de orgânicos, tanto nacionais quanto internacionais. Além disso, tem-se as seguintes colunas: **`r colnames(produtores)`**.
 
-Olhando para a base de dados, foi percebido que havia diferente formas de nomear o Brasil e havia países que estavam despadronizados, com preenchimento todo em caixa alta ou baixa.
+## Tratando os dados
+
+Com os dados importados, realizamos **transformações** para iniciar a análise. Na coluna sobre o país de origem, os nomes não estavam padronizados e, também, o Brasil estava representado como "Brasil" e como "BR".
 
 ```{r}
 prod2 <- produtores %>% 
@@ -34,10 +43,31 @@ prod2 <- produtores %>%
                           pais == "Argentina" ~ "ARGENTINA",
                           pais == "Espanha"~ "ESPANHA", 
                           pais == "Portugal" ~ "PORTUGAL",
+                          pais == "ITALY" ~ "ITÁLIA",
+                          pais == "MEXICO" ~ "MÉXICO",
+                          pais == "FRANCE" ~ "MÉXICO",
+                          pais == "PARAGUAY" ~ "PARAGUAI",
                           TRUE ~ pais))
 
-
 ```
+
+Olhemos agora para os estados brasileiros. Assim como nos países, encontramos algumas insconscistências na apresentação das observações. Há estados cadastrados pelo nome e pela sigla, siglas com alguma das letras em caixa baixa e a Cidade del Est está cadastrada como estado, sendo uma cidade na divisa do Brasil com o Paraguai. Neste caso, por ela estar cadastrada como brasileira, reclassificaremos como uma entidade pertencente ao estado do Paraná (PR).
+
+```{r}
+prod2 %>% 
+  filter (pais == "BRASIL") %>% 
+  mutate(uf = case_when(uf == "Bahia"~ "BA",
+                          uf == "Ciudad del Este" ~ "PR", 
+                          uf == "ITAPUA" ~ "BA",
+                          uf == "Pr"~ "PR", 
+                          uf == "sc" ~ "SC",
+                          TRUE ~ uf)) %>% 
+  group_by(uf) %>% 
+  count () %>% 
+  arrange(desc(n))-> prod_uf
+```
+
+## Exportadores
 
 O segundo passo foi agrupar todos os países, à exceção dos Brasil, e somar a quantidade de entidades cadastradas.
 
@@ -47,5 +77,55 @@ prod2 %>%
   group_by(pais) %>%
   count () %>% 
   arrange(desc(n)) %>% 
-  rename (quantidade = n )-> exportadores
+  rename (produtores = n ) -> exportadores
+
+```
+
+Ao total temos **`r nrow(prod2)`** estrangeiros e **`r nrow(prod_uf)`** brasileiros. Para os estrangeiros, obtemos a seguinte tabela:
+
+```{r}
+exportadores%>% 
+  reactable::reactable()
+```
+
+Nota-se que os três países que mais possuem produtores orgânicos autorizados a exportar para exportar para o Brasil são: **Bolívia, Turquia e Itália**.
+
+![Bandeira da Bolívia](images/bolivia_flag.png){fig-align="center" width="3cm" height="2cm"}
+
+![Bandeira da Turquia](images/turquia_flag-01.png){fig-align="center" width="3cm"}
+
+![Bandeira da Itália](images/italia_flag.png){fig-align="center" width="3cm"}
+
+Importante ressaltar que ter o maior número de entidades certificadas para exportação não necessariamente significa que o país exporta em maior quantidade para o Brasil.
+
+## Quantidade de produtores por estado
+
+Os estados com mais produtores são **Paraná, Rio Grande do Sul e São Paulo**:
+
+```{r}
+prod_uf%>%
+  rename (produtores = n) %>% 
+  rename (estado = uf) %>%
+  reactable::reactable()
+```
+
+```{r, include=FALSE}
+brasil <- read_country(year = 2020) %>% 
+  rename(uf = abbrev_state)
+
+
+dados_brasil <- brasil %>%
+  left_join(prod_uf, by = "uf")
+```
+
+No seguinte mapa, apresentamos os estados com o maior número de produtores de orgânicos cadastrados no site do MAPA. Lembrando que o maior número de produtores não necessariamente representa maior produção em quantidade
+
+```{r}
+
+ggplot() + 
+  geom_sf(data=dados_brasil,  aes(fill=n),color = NA)+
+  scale_fill_gradient(low = "grey", high = "red",
+                      name="Quant. entidades") +
+  labs(title="Entidades produtoras de orgânicos certificadas no Brasil", size=10) +
+  theme_minimal()
 ```
