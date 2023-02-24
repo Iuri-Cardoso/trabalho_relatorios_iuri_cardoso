@@ -1,0 +1,51 @@
+---
+title: "Breve análise sobre a produção de orgânicos no Brasil"
+format: html
+editor: visual
+theme: "yeti"
+lang: pt
+---
+
+```{r, include=FALSE}
+#| echo: false
+library(tidyverse)
+library(readxl)
+library(stringr)
+```
+
+Os [dados utilizados](https://dados.agricultura.gov.br/dataset/cadastro-nacional-de-produtores-organicos) estão disponíveis na base de Dados Abertos oficiais do Ministério da Agricultura, Pecuária e Abastecimento (MAPA). Neste trabalho, eu gostaria de verificar **quais paises possuem mais entidades certificadas para exportar protudos orgânicos para o Brasil**. Para, em seguida, analisar **a produção por unidade federativa**.
+
+```{r}
+
+produtores <- read_excel("~/projetos_r/dados/cnpomapa30092019.xlsx")
+
+produtores <- janitor::clean_names(produtores)
+
+```
+
+A base apresenta **`r nrow(produtores)`** entidades produtoras de orgânicos, tanto nacionais quanto internacionais. Com os dados importados, podemos precisamos **transformá-los** para dar início à análise.
+
+Olhando para a base de dados, foi percebido que havia diferente formas de nomear o Brasil e havia países que estavam despadronizados, com preenchimento todo em caixa alta ou baixa.
+
+```{r}
+prod2 <- produtores %>% 
+  mutate(pais = case_when(pais == "BR"~ "BRASIL",
+                          pais == "Brasil" ~ "BRASIL", 
+                          pais == "Argentina" ~ "ARGENTINA",
+                          pais == "Espanha"~ "ESPANHA", 
+                          pais == "Portugal" ~ "PORTUGAL",
+                          TRUE ~ pais))
+
+
+```
+
+O segundo passo foi agrupar todos os países, à exceção dos Brasil, e somar a quantidade de entidades cadastradas.
+
+```{r}
+prod2 %>% 
+  filter (pais != "BRASIL") %>% 
+  group_by(pais) %>%
+  count () %>% 
+  arrange(desc(n)) %>% 
+  rename (quantidade = n )-> exportadores
+```
