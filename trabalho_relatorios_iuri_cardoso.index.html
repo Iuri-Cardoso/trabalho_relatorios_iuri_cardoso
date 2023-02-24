@@ -92,6 +92,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <link href="trabalho_relatorios_iuri_cardoso.index_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="trabalho_relatorios_iuri_cardoso.index_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 
+<script src="trabalho_relatorios_iuri_cardoso.index_files/libs/core-js-2.5.3/shim.min.js"></script>
+<script src="trabalho_relatorios_iuri_cardoso.index_files/libs/react-17.0.0/react.min.js"></script>
+<script src="trabalho_relatorios_iuri_cardoso.index_files/libs/react-17.0.0/react-dom.min.js"></script>
+<script src="trabalho_relatorios_iuri_cardoso.index_files/libs/reactwidget-1.0.0/react-tools.js"></script>
+<script src="trabalho_relatorios_iuri_cardoso.index_files/libs/htmlwidgets-1.5.4/htmlwidgets.js"></script>
+<script src="trabalho_relatorios_iuri_cardoso.index_files/libs/reactable-binding-0.3.0/reactable.js"></script>
+
 
 </head>
 
@@ -117,14 +124,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 </header>
 
-<p>Os <a href="https://dados.agricultura.gov.br/dataset/cadastro-nacional-de-produtores-organicos">dados utilizados</a> estão disponíveis na base de Dados Abertos oficiais do Ministério da Agricultura, Pecuária e Abastecimento (MAPA). Neste trabalho, eu gostaria de verificar <strong>quais paises possuem mais entidades certificadas para exportar protudos orgânicos para o Brasil</strong>. Para, em seguida, analisar <strong>a produção por unidade federativa</strong>.</p>
+<p>Os <a href="https://dados.agricultura.gov.br/dataset/cadastro-nacional-de-produtores-organicos">dados utilizados</a> estão disponíveis na base de Dados Abertos oficiais do Ministério da Agricultura, Pecuária e Abastecimento (MAPA). A última atualização dos dados foi realizada em 23 de Maio de 2022, mas são referente ao ano de 2019.</p>
+<p>Neste trabalho, eu gostaria de verificar <strong>quais paises possuem mais entidades certificadas para exportar protudos orgânicos para o Brasil</strong>. Para, em seguida, analisar <strong>a quantidade por unidade federativa</strong>.</p>
+<p>O primeiro passo: Importar os dados e organizar as variáveis.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>produtores <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(<span class="st">"~/projetos_r/dados/cnpomapa30092019.xlsx"</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>produtores <span class="ot">&lt;-</span> janitor<span class="sc">::</span><span class="fu">clean_names</span>(produtores)</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>A base apresenta <strong>19978</strong> entidades produtoras de orgânicos, tanto nacionais quanto internacionais. Com os dados importados, podemos precisamos <strong>transformá-los</strong> para dar início à análise.</p>
-<p>Olhando para a base de dados, foi percebido que havia diferente formas de nomear o Brasil e havia países que estavam despadronizados, com preenchimento todo em caixa alta ou baixa.</p>
+<p>A base possui <strong>19978</strong> entidades produtoras de orgânicos, tanto nacionais quanto internacionais. Além disso, tem-se as seguintes colunas: <strong>tipo_de_entidade, entidade, pais, uf, cidade, situacao_cnpo, cnpf_cnpj_nif, nome_do_produtor, escopo, atividades, contato</strong>.</p>
+<p>Com os dados importados, realizamos <strong>transformações</strong> para iniciar a análise. Na coluna sobre o país de origem, os nomes não estavam padronizados e, também, o Brasil estava representado como “Brasil” e como “BR”.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>prod2 <span class="ot">&lt;-</span> produtores <span class="sc">%&gt;%</span> </span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pais =</span> <span class="fu">case_when</span>(pais <span class="sc">==</span> <span class="st">"BR"</span><span class="sc">~</span> <span class="st">"BRASIL"</span>,</span>
@@ -132,7 +141,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>                          pais <span class="sc">==</span> <span class="st">"Argentina"</span> <span class="sc">~</span> <span class="st">"ARGENTINA"</span>,</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>                          pais <span class="sc">==</span> <span class="st">"Espanha"</span><span class="sc">~</span> <span class="st">"ESPANHA"</span>, </span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                          pais <span class="sc">==</span> <span class="st">"Portugal"</span> <span class="sc">~</span> <span class="st">"PORTUGAL"</span>,</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>                          <span class="cn">TRUE</span> <span class="sc">~</span> pais))</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>                          pais <span class="sc">==</span> <span class="st">"ITALY"</span> <span class="sc">~</span> <span class="st">"ITÁLIA"</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>                          pais <span class="sc">==</span> <span class="st">"MEXICO"</span> <span class="sc">~</span> <span class="st">"MÉXICO"</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>                          pais <span class="sc">==</span> <span class="st">"FRANCE"</span> <span class="sc">~</span> <span class="st">"MÉXICO"</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>                          pais <span class="sc">==</span> <span class="st">"PARAGUAY"</span> <span class="sc">~</span> <span class="st">"PARAGUAI"</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>                          <span class="cn">TRUE</span> <span class="sc">~</span> pais))</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>O segundo passo foi agrupar todos os países, à exceção dos Brasil, e somar a quantidade de entidades cadastradas.</p>
 <div class="cell">
@@ -141,7 +154,56 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(pais) <span class="sc">%&gt;%</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span> () <span class="sc">%&gt;%</span> </span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n)) <span class="sc">%&gt;%</span> </span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span> (<span class="at">quantidade =</span> n )<span class="ot">-&gt;</span> exportadores</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span> (<span class="at">quant_entidades =</span> n ) <span class="ot">-&gt;</span> exportadores</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Assim, obtemos a seguinte tabela:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>exportadores<span class="sc">%&gt;%</span> </span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  reactable<span class="sc">::</span><span class="fu">reactable</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+
+<div id="htmlwidget-fc274f6ea4ea98fb0e66" class="reactable html-widget" style="width:auto;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-fc274f6ea4ea98fb0e66">{"x":{"tag":{"name":"Reactable","attribs":{"data":{"pais":["BOLÍVIA","TURQUIA","ITÁLIA","CHILE","PARAGUAI","ARGENTINA","ESPANHA","PORTUGAL","SRI LANKA","MÉXICO","CHINA","PAQUISTÃO","TUNISIA","PERU","PHILIPPINES","ROMÊNIA","AUSTRIA","EUA","FILIPINAS","SUDAN"],"quant_entidades":[382,103,74,38,37,34,17,16,13,9,7,4,4,3,3,2,1,1,1,1]},"columns":[{"accessor":"pais","name":"pais","type":"character"},{"accessor":"quant_entidades","name":"quant_entidades","type":"numeric"}],"defaultPageSize":10,"paginationType":"numbers","showPageInfo":true,"minRows":1,"dataKey":"152a53dd7718cd5e1acf4b50ff7b9e34"},"children":[]},"class":"reactR_markup"},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>Nota-se que os três países que mais possuem entidades orgânicas cadastradas para exportar para o Brasil são: <strong>Bolívia, Turquia e Itália</strong>.</p>
+<p>Importante ressaltar que ter o maior número de entidades certificadas para exportação não necessariamente significa que exporta em maior quantidade para o Brasil.</p>
+<p>Olhemos agora para os estados brasileiros. Assim como nos países, encontramos algumas insconscistências na apresentação das observações. Há estados cadastrado em alguns momentos pelo nome e em outros pela sigla, siglas com alguma das letras em caixa baixa e a Cidade del Est está cadastrada como estado, sendo uma cidade na divisa do Brasil com o Paraguai. Porém, por estar cadastrada como brasileira, reclassificaremos como uma entidade pertencente ao estado do Paraná (PR).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>prod2 <span class="sc">%&gt;%</span> </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span> (pais <span class="sc">==</span> <span class="st">"BRASIL"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">uf =</span> <span class="fu">case_when</span>(uf <span class="sc">==</span> <span class="st">"Bahia"</span><span class="sc">~</span> <span class="st">"BA"</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                          uf <span class="sc">==</span> <span class="st">"Ciudad del Este"</span> <span class="sc">~</span> <span class="st">"PR"</span>, </span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                          uf <span class="sc">==</span> <span class="st">"ITAPUA"</span> <span class="sc">~</span> <span class="st">"BA"</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>                          uf <span class="sc">==</span> <span class="st">"Pr"</span><span class="sc">~</span> <span class="st">"PR"</span>, </span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>                          uf <span class="sc">==</span> <span class="st">"sc"</span> <span class="sc">~</span> <span class="st">"SC"</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>                          <span class="cn">TRUE</span> <span class="sc">~</span> uf)) <span class="sc">%&gt;%</span> </span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(uf) <span class="sc">%&gt;%</span> </span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span> () <span class="sc">%&gt;%</span> </span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n))<span class="ot">-&gt;</span> prod_uf</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Feito o tratamento necessário aos dados, temos a seguinte tabela. Os estados com mais entidades cadastradas são <strong>Paraná, Rio Grande do Sul e São Paulo</strong>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>prod_uf<span class="sc">%&gt;%</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span> (<span class="at">quant_entidades =</span> n) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span> (<span class="at">estado =</span> uf) <span class="sc">%&gt;%</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  reactable<span class="sc">::</span><span class="fu">reactable</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+
+<div id="htmlwidget-3a086e5044c42d215d65" class="reactable html-widget" style="width:auto;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-3a086e5044c42d215d65">{"x":{"tag":{"name":"Reactable","attribs":{"data":{"estado":["PR","RS","SP","SC","PA","MG","RJ","PE","PI","MA","BA","CE","RN","PB","AM","ES","DF","SE","AC","MT","GO","RO","AL","MS","AP",null,"RR"],"quant_entidades":[3372,2388,2237,1618,926,925,839,757,744,681,650,616,526,471,365,327,295,275,246,243,223,162,109,97,52,47,37]},"columns":[{"accessor":"estado","name":"estado","type":"character"},{"accessor":"quant_entidades","name":"quant_entidades","type":"numeric"}],"defaultPageSize":10,"paginationType":"numbers","showPageInfo":true,"minRows":1,"dataKey":"10233145ccd9e14eba419782d82787ef"},"children":[]},"class":"reactR_markup"},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data=</span>dados_brasil,  <span class="fu">aes</span>(<span class="at">fill=</span>n),<span class="at">color =</span> <span class="cn">NA</span>)<span class="sc">+</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient</span>(<span class="at">low =</span> <span class="st">"grey"</span>, <span class="at">high =</span> <span class="st">"red"</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                      <span class="at">name=</span><span class="st">"Quant. entidades"</span>) <span class="sc">+</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span><span class="st">"Receita anual 2022"</span>, <span class="at">size=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="trabalho_relatorios_iuri_cardoso.index_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid" width="672"></p>
+</div>
 </div>
 
 </main>
